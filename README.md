@@ -48,12 +48,22 @@ Job application form. Fields: `firstName`, `lastName`, `email`, `phone`, `refere
 
 Empty fields are left out of the emails. All submitted values are HTML-escaped.
 
+### Spam filtering
+
+Before anything is sent, [middleware/spamFilter.js](middleware/spamFilter.js) screens each submission:
+
+- **Dropped silently** (returns 200 so bots get no signal; logged as `Dropped spam submission`): the hidden honeypot field `website` is filled in, or two or more fields look like random strings (letters only, with several capitals mixed in, e.g. `kMrOQjdptTtBiiHMD`).
+- **Rejected with 400** (`message` can be shown to the user): missing name, invalid email, a phone number without at least 7 digits, non-text values, or any field over 5000 characters.
+
+For the honeypot to work, the site's forms should include a visually hidden `website` input (with `tabindex="-1"` and `autocomplete="off"`) and send it with the rest of the fields.
+
 ### Responses
 
 | Status | Body                                                                                 | Meaning                                                       |
 | ------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
 | 200    | `{ "success": true, "message": "Quote received." }`                                  | The business notification was sent.                           |
 | 500    | `{ "success": false, "message": "Your quote request could not be sent. Please..." }` | The business notification failed. Show `message` to the user. |
+| 400    | `{ "success": false, "message": "Please enter a valid email address." }`             | Failed validation. Show `message` to the user.                |
 | 429    | `{ "success": false, "message": "Too many submissions. Please try again later." }`   | Rate limit hit.                                               |
 
 The confirmation email to the submitter is sent in the background. If it fails, the error is logged but the request still succeeds, because the business already has the submission.
