@@ -2,6 +2,7 @@ const express = require('express')
 const { rateLimit } = require('express-rate-limit')
 const emailRouter = new express.Router()
 const emailController = require('../controllers/emailController.js')
+const spamFilter = require('../middleware/spamFilter.js')
 
 // Each submission sends email, so cap how often one visitor can submit
 const submissionLimit = rateLimit({
@@ -13,7 +14,17 @@ const submissionLimit = rateLimit({
     },
 })
 
-emailRouter.post('/quote', submissionLimit, emailController.quote)
-emailRouter.post('/work', submissionLimit, emailController.work)
+emailRouter.post(
+    '/quote',
+    submissionLimit,
+    spamFilter({ nameFields: ['name'] }),
+    emailController.quote,
+)
+emailRouter.post(
+    '/work',
+    submissionLimit,
+    spamFilter({ nameFields: ['firstName', 'lastName'] }),
+    emailController.work,
+)
 
 module.exports = emailRouter
